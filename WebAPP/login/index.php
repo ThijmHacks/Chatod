@@ -61,6 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             $_SESSION['email'] = $user['email'];
             $_SESSION['phone'] = $user['phone'];
             echo "Login successful! Welcome, " . $_SESSION['full_name'];
+            header("Location: ../index.php");
         } else {
             $login_error = "Invalid password.";
         }
@@ -77,51 +78,60 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>Login & Register</title>
+    <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
+<div class="container" id="container">
+	<div class="form-container sign-up-container">
+        <?php
+            if ($register_error) {
+                echo "<p style='color:red;'>$register_error</p>";
+            }
+        ?>
+        <form action="index.php" method="POST">
+			<h1>Create Account</h1>
+			<input type="hidden" name="register">
+			<input type="text" id="username" name="username" placeholder="Username: " required>
+            <input type="text" id="full_name" name="full_name" placeholder="Full name: "required>
+			<input type="email" id="email" name="email" placeholder="Email: " required>
+            <input type="text" id="phone" name="phone" placeholder="Phone: ">
+            <input type="password" id="password" name="password" placeholder="Password: "required>
+			<button type="submit">Register</button>
+		</form>
+	</div>
+	<div class="form-container sign-in-container">
+        <?php
+         if ($login_error) {
+            echo "<p style='color:red;'>$login_error</p>";
+         }
+        ?>
+        <form action="index.php" method="POST">
+			<h1>Sign in</h1>
+			<input type="hidden" name="login">
+			<input type="text" id="login_username" name="login_username" placeholder="Username: " required>
+			<input type="password" id="login_password" name="login_password" placeholder="Password: "required>
+			<a href="#">Forgot your password?</a>
+			<button type="submit">Login</button>
+		</form>
+	</div>
+	<div class="overlay-container">
+		<div class="overlay">
+			<div class="overlay-panel overlay-left">
+				<h1>Welcome Back!</h1>
+				<p>To keep connected with us please login with your personal info</p>
+				<button class="ghost" id="signIn">Sign In</button>
+			</div>
+			<div class="overlay-panel overlay-right">
+				<h1>Hello, Friend!</h1>
+				<p>Enter your personal details and start journey with us</p>
+				<button class="ghost" id="signUp">Sign Up</button>
+			</div>
+		</div>
+	</div>
+</div>
 
-<h2>Register</h2>
-<?php
-if ($register_error) {
-    echo "<p style='color:red;'>$register_error</p>";
-}
-?>
-<form action="auth.php" method="POST">
-    <input type="hidden" name="register">
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required>
-    <br>
-    <label for="full_name">Full Name:</label>
-    <input type="text" id="full_name" name="full_name" required>
-    <br>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required>
-    <br>
-    <label for="phone">Phone (Optional):</label>
-    <input type="text" id="phone" name="phone">
-    <br>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
-    <br>
-    <button type="submit">Register</button>
-</form>
-
-<h2>Login</h2>
-<?php
-if ($login_error) {
-    echo "<p style='color:red;'>$login_error</p>";
-}
-?>
-<form action="auth.php" method="POST">
-    <input type="hidden" name="login">
-    <label for="login_username">Username:</label>
-    <input type="text" id="login_username" name="login_username" required>
-    <br>
-    <label for="login_password">Password:</label>
-    <input type="password" id="login_password" name="login_password" required>
-    <br>
-    <button type="submit">Login</button>
-</form>
+<script src="script.js"></script>
 
 </body>
 </html>
