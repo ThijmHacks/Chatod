@@ -82,6 +82,7 @@ form {
 }
 
 input {
+    border-radius: 5px;
 	background-color: #eee;
 	border: none;
 	padding: 12px 15px;

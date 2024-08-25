@@ -5,7 +5,6 @@
   <title>Redirecting</title>
 </head>
 <body>
-    <a href="login/login.php">Login</a>
-    <a href="login/register.php">Register</a>
+    <a href="login/">Login</a>
 </body>
 </html>
