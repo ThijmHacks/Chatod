@@ -61,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             $_SESSION['email'] = $user['email'];
             $_SESSION['phone'] = $user['phone'];
             echo "Login successful! Welcome, " . $_SESSION['full_name'];
-            header("Location: ../index.php");
+            header("Location: ../chatod");
         } else {
             $login_error = "Invalid password.";
         }
