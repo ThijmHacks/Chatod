@@ -1,4 +1,5 @@
 <?php
+session_start();
 // Database connection
 $servername = "localhost";
 $username = "chatod";
@@ -60,6 +61,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['phone'] = $user['phone'];
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
             echo "Login successful! Welcome, " . $_SESSION['full_name'];
             header("Location: ../chatod/friends");
         } else {
@@ -89,7 +92,7 @@ $conn->close();
                 echo "<p style='color:red;'>$register_error</p>";
             }
         ?>
-        <form action="index.php" method="POST">
+        <form action="./" method="POST">
 			<h1>Create Account</h1>
 			<input type="hidden" name="register">
 			<input type="text" id="username" name="username" placeholder="Username: " required>
@@ -106,7 +109,7 @@ $conn->close();
             echo "<p style='color:red;'>$login_error</p>";
          }
         ?>
-        <form action="index.php" method="POST">
+        <form action="./" method="POST">
 			<h1>Sign in</h1>
 			<input type="hidden" name="login">
 			<input type="text" id="login_username" name="login_username" placeholder="Username: " required>
