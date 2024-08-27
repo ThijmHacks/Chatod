@@ -136,62 +136,79 @@ $friends = $stmt->get_result();
 $conn->close();
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Friends</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<h1>Friends Page</h1>
+<!-- Left Sidebar -->
+<div class="left-bar">
+    <!-- Content for the left sidebar can be added here -->
+</div>
 
-<!-- Display any messages or errors -->
-<?php if (isset($message)): ?>
-    <p style="color: green;"><?php echo $message; ?></p>
-<?php endif; ?>
+<!-- Section Bar -->
+<div class="section-bar">
+    <button class="section-btn" onclick="showSection('section1')">Online</button>
+    <button class="section-btn" onclick="showSection('section2')">All Friends</button>
+    <button class="section-btn" onclick="showSection('section3')">AddFriend</button>
+</div>
 
-<?php if (isset($error)): ?>
-    <p style="color: red;"><?php echo $error; ?></p>
-<?php endif; ?>
+<!-- Sections Content -->
+<div class="sections-container">
+    <div id="section1" class="section-content active"><p>Online Friends</p></div>
+    <div id="section2" class="section-content">
+        <h3>Your Friends</h3>
+           <?php if ($friends->num_rows > 0): ?>
+               <?php while ($friend = $friends->fetch_assoc()): ?>
+                   <p>
+                       <a href="../chats?friend_id=<?php $friend['id']; ?>">
+                           <?php echo $friend['username']; ?>
+                       </a>
+                   </p>
+               <?php endwhile; ?>
+           <?php else: ?>
+               <p>You have no friends yet.</p>
+           <?php endif; ?>
+    </div>
+    <div id="section3" class="section-content">
+        <!-- Friend Request Input Form -->
+        <h3>Send a Friend Request</h3>
+        <form method="POST" action="./">
+            <label for="friend_username">Enter friend's username:</label>
+            <input type="text" id="friend_username" name="friend_username" required>
+            <button type="submit" name="send_request">Send Friend Request</button>
+        </form>
 
-<!-- Friend Request Input Form -->
-<h3>Send a Friend Request</h3>
-<form method="POST" action="./">
-    <label for="friend_username">Enter friend's username:</label>
-    <input type="text" id="friend_username" name="friend_username" required>
-    <button type="submit" name="send_request">Send Friend Request</button>
-</form>
+        <!--Friend Requests-->
+        <h3>Friend Requests</h3>
+        <?php if ($friendRequests->num_rows > 0): ?>
+            <?php while ($request = $friendRequests->fetch_assoc()): ?>
+                <strong><?php echo htmlspecialchars($request['username']); ?></strong> wants to be your friend.
+                <form method="POST" action="./" style="display:inline; margin-left:10px;">
+                    <input type="hidden" name="request_id" value="<?php echo $request['request_id']; ?>">
+                    <button type="submit" name="accept">Accept</button>
+                    <button type="submit" name="decline">Decline</button>
+                </form><br>
+            <?php endwhile; ?>
+        <?php else: ?>
+            <p>No new friend requests.</p>
+        <?php endif; ?>
+        <?php if (isset($message)): ?>
+            <p style="color: green;"><?php echo $message; ?></p>
+        <?php endif; ?>
 
-<!-- Display Friend Requests -->
-<h3>Friend Requests</h3>
-<?php if ($friendRequests->num_rows > 0): ?>
-    <?php while ($request = $friendRequests->fetch_assoc()): ?>
-        <strong><?php echo htmlspecialchars($request['username']); ?></strong> wants to be your friend.
-        <form method="POST" action="./" style="display:inline; margin-left:10px;">
-            <input type="hidden" name="request_id" value="<?php echo $request['request_id']; ?>">
-            <button type="submit" name="accept">Accept</button>
-            <button type="submit" name="decline">Decline</button>
-        </form><br>
-    <?php endwhile; ?>
-<?php else: ?>
-    <p>No new friend requests.</p>
-<?php endif; ?>
+        <?php if (isset($error)): ?>
+            <p style="color: red;"><?php echo $error; ?></p>
+        <?php endif; ?>
+    </div>
+</div>
 
-<!-- Display Friends List -->
-<h3>Your Friends</h3>
-<?php if ($friends->num_rows > 0): ?>
-    <?php while ($friend = $friends->fetch_assoc()): ?>
-        <p>
-            <a href="../chats?friend_id=<?php echo $friend['id']; ?>">
-                <?php echo htmlspecialchars($friend['username']); ?>
-            </a>
-        </p>
-    <?php endwhile; ?>
-<?php else: ?>
-    <p>You have no friends yet.</p>
-<?php endif; ?>
-
+<script src="script.js"></script>
 </body>
 </html>
