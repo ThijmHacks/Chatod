@@ -1,140 +1,196 @@
 <?php
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login");
+    exit();
+}
+
+// If logged in, continue
+$user_id = $_SESSION['user_id'];
+$username = $_SESSION['username'];
+
 // Database connection
 $servername = "localhost";
-$username = "chatod";
-$password = "";
+$dbUsername = "chatod";
+$dbPassword = "";
 $database = "chatod";
 
-$conn = new mysqli($servername, $username, $password, $database);
+$conn = new mysqli($servername, $dbUsername, $dbPassword, $database);
 
+// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-session_start();
-
-// Get the logged-in user's ID
-$user_id = null;
-$username = $_SESSION['username'];
-$sql = "SELECT id FROM users WHERE username='$username'";
-$result = $conn->query($sql);
-if ($result->num_rows > 0) {
-    $user = $result->fetch_assoc();
-    $user_id = $user['id'];
-}
-
-// Handle sending a friend request
-$friend_request_status = '';
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['friend_username'])) {
+// Handle Sending Friend Requests
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['send_request'])) {
     $friend_username = $_POST['friend_username'];
 
-    // Find the receiver's user ID
-    $sql = "SELECT id FROM users WHERE username='$friend_username'";
-    $result = $conn->query($sql);
+    // Ensure the user is not trying to send a request to themselves
+    if ($friend_username != $username) {
+        // Get the friend ID from the username
+        $sql = "SELECT id FROM users WHERE username = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $friend_username);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
-        $friend = $result->fetch_assoc();
-        $receiver_id = $friend['id'];
+        if ($result->num_rows > 0) {
+            $friend = $result->fetch_assoc();
+            $friend_id = $friend['id'];
 
-        // Check if a friend request already exists
-        $sql = "SELECT * FROM friend_requests WHERE sender_id='$user_id' AND receiver_id='$receiver_id'";
-        $result = $conn->query($sql);
+            // Check if a friend request already exists
+            $sql = "SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = 'pending'";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ii", $user_id, $friend_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-        if ($result->num_rows == 0) {
-            // Insert the friend request
-            $sql = "INSERT INTO friend_requests (sender_id, receiver_id) VALUES ('$user_id', '$receiver_id')";
-            if ($conn->query($sql) === TRUE) {
-                $friend_request_status = "Friend request sent to $friend_username!";
+            if ($result->num_rows == 0) {
+                // Insert the friend request
+                $sql = "INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, 'pending')";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ii", $user_id, $friend_id);
+                if ($stmt->execute()) {
+                    $message = "Friend request sent to " . htmlspecialchars($friend_username) . "!";
+                } else {
+                    $error = "Error sending friend request: " . $conn->error;
+                }
             } else {
-                $friend_request_status = "Error sending friend request: " . $conn->error;
+                $error = "Friend request already sent to this user.";
             }
         } else {
-            $friend_request_status = "You have already sent a friend request to $friend_username.";
+            $error = "User not found.";
         }
     } else {
-        $friend_request_status = "User $friend_username not found.";
+        $error = "You cannot send a friend request to yourself.";
     }
 }
 
-// Handle accepting a friend request
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['accept_friend'])) {
+// Handle Friend Request Actions (Accept/Decline)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['request_id'])) {
     $request_id = $_POST['request_id'];
-    $sql = "UPDATE friend_requests SET status='accepted' WHERE id='$request_id'";
-    $conn->query($sql);
-}
 
-// Handle declining a friend request
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['decline_friend'])) {
-    $request_id = $_POST['request_id'];
-    $sql = "UPDATE friend_requests SET status='declined' WHERE id='$request_id'";
-    $conn->query($sql);
-}
+    if (isset($_POST['accept'])) {
+        // Update the friend request status to 'accepted'
+        $sql = "UPDATE friend_requests SET status = 'accepted' WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $request_id);
+        if ($stmt->execute()) {
+            // Retrieve sender_id and receiver_id
+            $sql = "SELECT sender_id, receiver_id FROM friend_requests WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $request_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $request = $result->fetch_assoc();
 
-// Retrieve pending friend requests for the logged-in user
-$pending_requests = [];
-$sql = "SELECT friend_requests.id, users.username
-        FROM friend_requests
-        JOIN users ON friend_requests.sender_id = users.id
-        WHERE friend_requests.receiver_id = '$user_id'
-        AND friend_requests.status = 'pending'";
+            $sender_id = $request['sender_id'];
+            $receiver_id = $request['receiver_id'];
 
-$result = $conn->query($sql);
-
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $pending_requests[] = $row;
+            // Insert friendship in friends table (bi-directional)
+            $sql = "INSERT INTO friends (user_id1, user_id2) VALUES (?, ?), (?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("iiii", $receiver_id, $sender_id, $sender_id, $receiver_id);
+            if ($stmt->execute()) {
+                $message = "Friend request accepted and friendship established!";
+            } else {
+                $error = "Error inserting friendship: " . $conn->error;
+            }
+        } else {
+            $error = "Error updating request status: " . $conn->error;
+        }
+    } elseif (isset($_POST['decline'])) {
+        // Decline the friend request
+        $sql = "DELETE FROM friend_requests WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $request_id);
+        if ($stmt->execute()) {
+            $message = "Friend request declined.";
+        } else {
+            $error = "Error declining the request: " . $conn->error;
+        }
     }
 }
+
+// Fetch Friend Requests
+$sql = "SELECT fr.id AS request_id, u.username FROM friend_requests fr
+        JOIN users u ON fr.sender_id = u.id
+        WHERE fr.receiver_id = ? AND fr.status = 'pending'";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$friendRequests = $stmt->get_result();
+
+// Fetch Friends List
+$sql = "SELECT u.username FROM friends f
+        JOIN users u ON (f.user_id1 = u.id OR f.user_id2 = u.id)
+        WHERE (f.user_id1 = ? OR f.user_id2 = ?) AND u.id != ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("iii", $user_id, $user_id, $user_id);
+$stmt->execute();
+$friends = $stmt->get_result();
 
 $conn->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome, <?php echo $_SESSION['full_name']; ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends</title>
 </head>
 <body>
 
-<h2>Welcome, <?php echo $_SESSION['full_name']; ?>!</h2>
+<h1>Friends Page</h1>
 
-<!-- Friend Request Input Bar -->
-<h3>Send a Friend Request</h3>
-<form action="./" method="POST">
-    <label for="friend_username">Friend's Username:</label>
-    <input type="text" name="friend_username" id="friend_username" required>
-    <button type="submit">Send Request</button>
-</form>
-
-<!-- Display status of friend request sending -->
-<?php if (!empty($friend_request_status)): ?>
-    <p><?php echo $friend_request_status; ?></p>
+<!-- Display any messages or errors -->
+<?php if (isset($message)): ?>
+    <p style="color: green;"><?php echo $message; ?></p>
 <?php endif; ?>
 
-<!-- Display Pending Friend Requests -->
-<h3>Pending Friend Requests</h3>
-<?php if (count($pending_requests) > 0): ?>
-    <?php foreach ($pending_requests as $request): ?>
-        <div>
-            <?php if (is_array($request) && isset($request['username'])): ?>
-                <strong><?php echo htmlspecialchars($request['username']); ?></strong> wants to be your friend.
-                <form action="./" method="POST" style="display:inline;">
-                    <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
-                    <button type="submit" name="accept_friend">Accept</button>
-                </form>
-                <form action="./" method="POST" style="display:inline;">
-                    <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
-                    <button type="submit" name="decline_friend">Decline</button>
-                </form>
-            <?php else: ?>
-                <p>An error occurred or no valid friend request data found.</p>
-            <?php endif; ?>
-        </div>
-    <?php endforeach; ?>
+<?php if (isset($error)): ?>
+    <p style="color: red;"><?php echo $error; ?></p>
+<?php endif; ?>
+
+<!-- Friend Request Input Form -->
+<h3>Send a Friend Request</h3>
+<form method="POST" action="./">
+    <label for="friend_username">Enter friend's username:</label>
+    <input type="text" id="friend_username" name="friend_username" required>
+    <button type="submit" name="send_request">Send Friend Request</button>
+</form>
+
+<!-- Display Friend Requests -->
+<h3>Friend Requests</h3>
+<?php if ($friendRequests->num_rows > 0): ?>
+    <?php while ($request = $friendRequests->fetch_assoc()): ?>
+        <strong><?php echo htmlspecialchars($request['username']); ?></strong> wants to be your friend.
+        <form method="POST" action="./" style="display:inline; margin-left:10px;">
+            <input type="hidden" name="request_id" value="<?php echo $request['request_id']; ?>">
+            <button type="submit" name="accept">Accept</button>
+            <button type="submit" name="decline">Decline</button>
+        </form><br>
+    <?php endwhile; ?>
 <?php else: ?>
-    <p>No pending friend requests.</p>
+    <p>No new friend requests.</p>
+<?php endif; ?>
+
+<!-- Display Friends List -->
+<h3>Your Friends</h3>
+<?php if ($friends->num_rows > 0): ?>
+    <?php while ($friend = $friends->fetch_assoc()): ?>
+        <p>
+            <a href="../chats?friend_id=<?php echo $friend['id']; ?>">
+                <?php echo htmlspecialchars($friend['username']); ?>
+            </a>
+        </p>
+    <?php endwhile; ?>
+<?php else: ?>
+    <p>You have no friends yet.</p>
 <?php endif; ?>
 
 </body>
