@@ -1,0 +1,73 @@
+/* Reset some basic styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* Left Sidebar */
+.left-bar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 4cm;
+    height: 100%;
+    background-color: #444;
+    color: white;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* Section Bar */
+.section-bar {
+    margin-top: 0;
+    height: 50px;
+    background-color: #444;
+    color: white;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.section-bar .section-btn {
+    background-color: #555;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.section-bar .section-btn:hover {
+    background-color: #666;
+}
+
+/* Sections Container */
+.sections-container {
+    margin-top: 50px;
+    margin-left: 4cm;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+    width: calc(100% - 4cm); /* Adjust width to fit beside the left sidebar */
+    height: 100vh; /* Ensure the sections container takes up full height */
+    overflow: hidden; /* Hide overflowing content */
+    display: flex; /* Use flexbox to align sections */
+}
+
+/* Sections Content */
+.section-content {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    transition: transform 0.5s ease-in-out; /* Smooth sliding */
+    transform: translateX(100%); /* Start off-screen */
+}
+
+.section-content.active {
+    transform: translateX(0); /* Slide into view */
+}
+
+.section-content.inactive {
+    transform: translateX(-100%); /* Slide out of view */
+}

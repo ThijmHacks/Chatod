@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sliding Bar Layout</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Left Sidebar -->
+<div class="left-bar">
+    <!-- Content for the left sidebar can be added here -->
+</div>
+
+<!-- Section Bar -->
+<div class="section-bar">
+    <button class="section-btn" onclick="showSection('section1')">Section 1</button>
+    <button class="section-btn" onclick="showSection('section2')">Section 2</button>
+    <button class="section-btn" onclick="showSection('section3')">Section 3</button>
+    <button class="section-btn" onclick="showSection('section4')">Section 4</button>
+</div>
+
+<!-- Sections Content -->
+<div class="sections-container">
+    <div id="section1" class="section-content active">This is Section 1 content.</div>
+    <div id="section2" class="section-content">This is Section 2 content.</div>
+    <div id="section3" class="section-content">This is Section 3 content.</div>
+    <div id="section4" class="section-content">This is Section 4 content.</div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
