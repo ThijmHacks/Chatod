@@ -125,7 +125,7 @@ $stmt->execute();
 $friendRequests = $stmt->get_result();
 
 // Fetch Friends List
-$sql = "SELECT u.username FROM friends f
+$sql = "SELECT u.id, u.username FROM friends f
         JOIN users u ON (f.user_id1 = u.id OR f.user_id2 = u.id)
         WHERE (f.user_id1 = ? OR f.user_id2 = ?) AND u.id != ?";
 $stmt = $conn->prepare($sql);
@@ -135,7 +135,6 @@ $friends = $stmt->get_result();
 
 $conn->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -156,41 +155,42 @@ $conn->close();
 <div class="section-bar">
     <button class="section-btn" onclick="showSection('section1')">Online</button>
     <button class="section-btn" onclick="showSection('section2')">All Friends</button>
-    <button class="section-btn" onclick="showSection('section3')">AddFriend</button>
+    <button class="section-btn" onclick="showSection('section3')">Add Friend</button>
 </div>
 
 <!-- Sections Content -->
 <div class="sections-container">
-    <div id="section1" class="section-content active"><p>Online Friends</p></div>
+    <div id="section1" class="section-content active">
+        <h3>Online Friends</h3>
+        <!-- Implement online friends logic here -->
+    </div>
+
     <div id="section2" class="section-content">
         <h3>Your Friends</h3>
-           <?php if ($friends->num_rows > 0): ?>
-               <?php while ($friend = $friends->fetch_assoc()): ?>
-                   <p>
-                       <a href="../chats?friend_id=<?php $friend['id']; ?>">
-                           <?php echo $friend['username']; ?>
-                       </a>
-                   </p>
-               <?php endwhile; ?>
-           <?php else: ?>
-               <p>You have no friends yet.</p>
-           <?php endif; ?>
+        <?php if ($friends->num_rows > 0): ?>
+            <?php while ($friend = $friends->fetch_assoc()): ?>
+                <button onclick="goToChat(<?php echo $friend['id']; ?>)">
+                    Chat with <?php echo htmlspecialchars($friend['username']); ?>
+                </button><br>
+            <?php endwhile; ?>
+        <?php else: ?>
+            <p>You have no friends yet.</p>
+        <?php endif; ?>
     </div>
+
     <div id="section3" class="section-content">
-        <!-- Friend Request Input Form -->
         <h3>Send a Friend Request</h3>
-        <form method="POST" action="./">
+        <form method="POST" action="">
             <label for="friend_username">Enter friend's username:</label>
             <input type="text" id="friend_username" name="friend_username" required>
             <button type="submit" name="send_request">Send Friend Request</button>
         </form>
 
-        <!--Friend Requests-->
         <h3>Friend Requests</h3>
         <?php if ($friendRequests->num_rows > 0): ?>
             <?php while ($request = $friendRequests->fetch_assoc()): ?>
                 <strong><?php echo htmlspecialchars($request['username']); ?></strong> wants to be your friend.
-                <form method="POST" action="./" style="display:inline; margin-left:10px;">
+                <form method="POST" action="" style="display:inline; margin-left:10px;">
                     <input type="hidden" name="request_id" value="<?php echo $request['request_id']; ?>">
                     <button type="submit" name="accept">Accept</button>
                     <button type="submit" name="decline">Decline</button>
@@ -199,6 +199,7 @@ $conn->close();
         <?php else: ?>
             <p>No new friend requests.</p>
         <?php endif; ?>
+
         <?php if (isset($message)): ?>
             <p style="color: green;"><?php echo $message; ?></p>
         <?php endif; ?>
@@ -210,5 +211,6 @@ $conn->close();
 </div>
 
 <script src="script.js"></script>
+<script src="gotochat.js"></script>
 </body>
-</html>
+</
